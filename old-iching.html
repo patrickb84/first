@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<!--
+Patrick Bradshaw 2018, probably.
+-->
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        
+        <link href="../_assets/css/tachyons.css" rel="stylesheet" type="text/css"/>
+        <link href="../_assets/css/animate.css" rel="stylesheet" type="text/css"/>
+        <script src="../_assets/js/jquery-3.3.1.min.js" type="text/javascript"></script>
+        
+        <title id="title">易 I Ching</title>
+    </head>
+    
+    <body class='sans-serif pa4 center mw6 '>
+        <div class='mb3 dib w-100 tc bg-near-white'>
+            <h1 class='dib w-100 b f2 center'><strong>易</strong></h1>
+        </div>
+        <div class="w-100 dib cf">
+            <textarea id="question" name="question" class="w-100 h4" placeholder="Ask a question..."></textarea>
+            <a href='#' class='f3 pv2 ph5 link dim helvetica fr mv1 outline br1 b--near-black bg-white black' onclick='button()'>貞</a>
+        </div>
+        <div id='lines' class='w-50 fl dib'>
+            <table class='w-100 h4 tc bg-light-gray'>
+                <tr>
+                    <td class='code b f4' style='letter-spacing: -3px; line-height: .85'>
+                        <div id='l6'></div>
+                        <div id='l5'></div>
+                        <div id='l4'></div>
+                        <div id='l3'></div>
+                        <div id='l2'></div>
+                        <div id='l1'></div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div id='trigrams' class='w-50 fl mb1'>
+            <table class='bg-moon-gray w-100 h4 tc f3'>
+                <tr>
+                    <td>
+                        <div id='upper' class='v-mid pt2'></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div id='lower' class='v-mid pb2'></div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <div id='result' class='gray code f6 tr pb3'>&nbsp;</div>
+        <div id='heading' class="f4 pb3"></div>
+        <div id='heading2' class="f4 pb3"></div>
+
+
+
+
+
+
+
+
+
+
+        <script>
+            /**
+             * The 4 distinct lines.
+             * @type type
+             */
+            var movingYang = {value: 9, force: 1, move: 0, string: "====o====", image: "images/mYang1.png"};
+            var movingYin = {value: 6, force: 0, move: 1, string: "=== x ===", image: "images/mYin1.png"};
+            var staticYang = {value: 7, force: 1, move: 1, string: "=========", image: "images/sYang1.png"};
+            var staticYin = {value: 8, force: 0, move: 0, string: "===&nbsp;&nbsp;&nbsp;===", image: "images/sYin1.png"};
+
+            /*
+             * Here, the trigram array, and the trigrams.
+             * @type Array
+             */
+            var heaven = {title: "Heaven", name: "天 Heaven", chinese: "乾 Qián", lines: [1, 1, 1], image: null, uni: "☰"};
+            var earth = {title: "Earth", name: "地 Earth", chinese: "坤 Kūn", lines: [0, 0, 0], image: null, uni: "☷"};
+            var fire = {title: "Flame", name: "火 Fire", chinese: "離 Lí", lines: [1, 0, 1], image: null, uni: "☲"};
+            var water = {title: "Water", name: "水 Water", chinese: "坎 Kǎn", lines: [0, 1, 0], image: null, uni: "☵"};
+            var thunder = {title: "Thunder", name: "雷 Thunder", chinese: "震 Zhèn", lines: [1, 0, 0], image: null, uni: "☳"};
+            var mountain = {title: "Mountain", name: "山 Mountain", chinese: "艮 Gèn", lines: [0, 0, 1], image: null, uni: "☶"};
+            var lake = {title: "Lake", name: "澤 Lake", chinese: "兌 Duì", lines: [1, 1, 0], image: null, uni: "☱"};
+            var wind = {title: "Wind", name: "風 Wind", chinese: "巽 Xùn", lines: [0, 1, 1], image: null, uni: "☴"};
+
+            var bagua = [heaven, thunder, water, mountain, earth, wind, fire, lake];
+
+            /**
+             * 0 hex number
+             * 1 chinese name
+             * 2 chinese symbol
+             * 3 title
+             * 5 above
+             * 6 below
+             * @type Array
+             */
+            var hexagram1 = [1, "Ch’ien", "乾", "The Creative", "Heaven", "Heaven"];
+            var hexagram2 = [2, "K’un", "坤", "The Receptive", "Earth", "Earth"];
+            var hexagram3 = [3, "Chun", "屯", "Difficulty at the Beginning", "Water", "Thunder"];
+            var hexagram4 = [4, "Mêng", "蒙", "Youthful Folly", "Mountain", "Water"];
+            var hexagram5 = [5, "Hsü", "需", "Waiting (Nourishment)", "Water", "Heaven"];
+            var hexagram6 = [6, "Sung", "訟", "Conflict", "Heaven", "Water"];
+            var hexagram7 = [7, "Shih", "師", "The Army", "Earth", "Water"];
+            var hexagram8 = [8, "Pi", "比", "Holding Together [Union]", "Water", "Earth"];
+            var hexagram9 = [9, "Hsiao Ch’u", "小畜", "The Taming Power of the Small", "Wind", "Heaven"];
+            var hexagram10 = [10, "Lü", "履", "Treading [Conduct]", "Heaven", "Lake"];
+            var hexagram11 = [11, "T’ai", "泰", "Peace", "Earth", "Heaven"];
+            var hexagram12 = [12, "P’i", "否", "Standstill [Stagnation]", "Heaven", "Earth"];
+            var hexagram13 = [13, "T’ung Jên", "同人", "Fellowship with Men", "Heaven", "Flame"];
+            var hexagram14 = [14, "Ta Yu", "大有", "Possession in Great Measure", "Flame", "Heaven"];
+            var hexagram15 = [15, "Ch’ien", "謙", "Modesty", "Earth", "Mountain"];
+            var hexagram16 = [16, "Yü", "豫", "Enthusiasm", "Thunder", "Earth"];
+            var hexagram17 = [17, "Sui", "隨", "Following", "Lake", "Thunder"];
+            var hexagram18 = [18, "Ku", "蠱", "Work on what has been spoiled [Decay]", "Mountain", "Wind"];
+            var hexagram19 = [19, "Lin", "臨", "Approach", "Earth", "Lake"];
+            var hexagram20 = [20, "Kuan", "觀", "Contemplation (View)", "Wind", "Earth"];
+            var hexagram21 = [21, "Shih Ho", "噬嗑", "Biting Through", "Flame", "Thunder"];
+            var hexagram22 = [22, "Pi", "賁", "Grace", "Mountain", "Flame"];
+            var hexagram23 = [23, "Po", "剝", "Splitting Apart", "Mountain", "Earth"];
+            var hexagram24 = [24, "Fu", "復", "Return (The Turning Point)", "Earth", "Thunder"];
+            var hexagram25 = [25, "Wu Wang", "無妄", "Innocence (The Unexpected)", "Heaven", "Thunder"];
+            var hexagram26 = [26, "Ta Ch’u", "大畜", "The Taming Power of the Great", "Mountain", "Heaven"];
+            var hexagram27 = [27, "I", "頤", "Corners of the Mouth (Providing Nourishment)", "Mountain", "Thunder"];
+            var hexagram28 = [28, "Ta Kuo", "大過", "Preponderance of the Great", "Lake", "Wind"];
+            var hexagram29 = [29, "K’an", "坎", "The Abysmal (Water)", "Water", "Water"];
+            var hexagram30 = [30, "Li", "離", "The Clinging Fire", "Flame", "Flame"];
+            var hexagram31 = [31, "Hsien", "咸", "Influence (Wooing)", "Lake", "Mountain"];
+            var hexagram32 = [32, "Hêng", "恆", "Duration", "Thunder", "Wind"];
+            var hexagram33 = [33, "Tun", "遯", "Retreat", "Heaven", "Mountain"];
+            var hexagram34 = [34, "Ta Chuang", "大壯", "The Power of the Great", "Thunder", "Heaven"];
+            var hexagram35 = [35, "Chin", "晉", "Progress", "Flame", "Earth"];
+            var hexagram36 = [36, "Ming I", "明夷", "Darkening the Light", "Earth", "Flame"];
+            var hexagram37 = [37, "Chia", "Jên", "家人", "Family", "Wind", "Flame"];
+            var hexagram38 = [38, "K’uei", "睽", "Opposition", "Flame", "Lake"];
+            var hexagram39 = [39, "Chien", "蹇", "Obstruction", "Water", "Mountain"];
+            var hexagram40 = [40, "Hsieh", "解", "Deliverance", "Thunder", "Water"];
+            var hexagram41 = [41, "Sun", "損", "Decrease", "Mountain", "Lake"];
+            var hexagram42 = [42, "I", "益", "Increase", "Wind", "Thunder"];
+            var hexagram43 = [43, "Kuai", "夬", "Breakthrough (Resoluteness)", "Lake", "Heaven"];
+            var hexagram44 = [44, "Kou", "姤", "Coming to Meet", "Heaven", "Wind"];
+            var hexagram45 = [45, "Ts’ui", "萃", "Gathering Together [Massing]", "Lake", "Earth"];
+            var hexagram46 = [46, "Shêng", "升", "Pushing Upward", "Earth", "Wind"];
+            var hexagram47 = [47, "K’un", "困", "Oppression (Exhaustion)", "Lake", "Water"];
+            var hexagram48 = [48, "Ching", "井", "The Well", "Water", "Wind"];
+            var hexagram49 = [49, "Ko", "革", "Revolution (Molting)", "Lake", "Flame"];
+            var hexagram50 = [50, "Ting", "鼎", "The Caldron", "Flame", "Wind"];
+            var hexagram51 = [51, "Chên", "震", "The Arousing (Shock/Thunder)", "Thunder", "Thunder"];
+            var hexagram52 = [52, "Kên", "艮", "Keeping Still", "Mountain", "Mountain"];
+            var hexagram53 = [53, "Chien", "漸", "Development (Gradual Progress)", "Wind", "Mountain"];
+            var hexagram54 = [54, "Kuei Mei", "歸妹", "Thunder", "Lake"];
+            var hexagram55 = [55, "Fêng", "豐", "Abundance", "Thunder", "Flame"];
+            var hexagram56 = [56, "Lü", "旅", "The Wanderer", "Flame", "Mountain"];
+            var hexagram57 = [57, "Sun", "巽", "The Gentle (The Penetrating/Wind)", "Wind", "Wind"];
+            var hexagram58 = [58, "Tui", "兌", "The Joyous Lake", "Lake", "Lake"];
+            var hexagram59 = [59, "Huan", "渙", "Dispersion [Dissolution]", "Wind", "Water"];
+            var hexagram60 = [60, "Chieh", "節", "Limitation", "Water", "Lake"];
+            var hexagram61 = [61, "Chung Fu", "中孚", "Inner Truth", "Wind", "Lake"];
+            var hexagram62 = [62, "Hsiao Kuo", "小過", "Preponderance of the Small", "Thunder", "Mountain"];
+            var hexagram63 = [63, "Chi Chi", "既濟", "After Completion", "Water", "Flame"];
+            var hexagram64 = [64, "Wei Chi", "未濟", "Before Completion", "Flame", "Water"];
+
+            var hexagrams = [hexagram1, hexagram2, hexagram3, hexagram4, hexagram5, hexagram6, hexagram7, hexagram8, hexagram9, hexagram10, hexagram11, hexagram12, hexagram13, hexagram14, hexagram15, hexagram16, hexagram17, hexagram18, hexagram19, hexagram20, hexagram21, hexagram22, hexagram23, hexagram24, hexagram25, hexagram26, hexagram27, hexagram28, hexagram29, hexagram30, hexagram31, hexagram32, hexagram33, hexagram34, hexagram35, hexagram36, hexagram37, hexagram38, hexagram39, hexagram40, hexagram41, hexagram42, hexagram43, hexagram44, hexagram45, hexagram46, hexagram47, hexagram48, hexagram49, hexagram50, hexagram51, hexagram52, hexagram53, hexagram54, hexagram55, hexagram56, hexagram57, hexagram58, hexagram59, hexagram60, hexagram61, hexagram62, hexagram63, hexagram64];
+
+
+            // Initialize the probabilty array (size 38)
+            var yarrow = [];
+            for (let i = 0; i < 8; i++) {
+                yarrow.push(movingYang);
+            }
+            for (let i = 0; i < 2; i++) {
+                yarrow.push(movingYin);
+            }
+            for (let i = 0; i < 11; i++) {
+                yarrow.push(staticYang);
+            }
+            for (let i = 0; i < 17; i++) {
+                yarrow.push(staticYin);
+            }
+
+
+
+            function button() {
+                var hand = [];
+                var lower2 = [];
+                var upper2 = [];
+                var moving = [];
+
+                shuffleArray(yarrow);
+                var upper = [];
+                var lower = [];
+                for (i = 0; i < 6; i++) {
+                    var a = yarrow.pop();
+                    hand.push(a);
+                    console.log(a.string); //
+
+                    if (a.value % 3 === 0) {
+                        moving.push(i + 1);
+                    }
+
+                    if (i < 3) {
+                        lower[i] = a.force;
+                        lower2[i] = a.move;
+                    }
+                    if (i >= 3) {
+                        upper[i - 3] = a.force;
+                        upper2[i - 3] = a.move;
+                    }
+
+                    document.getElementById('l' + (i + 1)).innerHTML = a.string;
+                }
+                console.log(lower + " " + upper);
+                console.log("determining...");
+                console.log(Trigram(lower).uni + " " + Trigram(upper).uni);
+                console.log(moving.toString());
+
+                document.getElementById('lower').innerHTML = Trigram(lower).chinese;
+                document.getElementById('upper').innerHTML = Trigram(upper).chinese;
+
+                console.log("determining...");
+                console.log(Hexagram(Trigram(lower), Trigram(upper))[0]);
+                console.log(Hexagram(Trigram(lower2), Trigram(upper2))[0]);
+
+                var hexR = Hexagram(Trigram(lower), Trigram(upper));
+                var hexM = Hexagram(Trigram(lower2), Trigram(upper2));
+                var stringresult = hexR[0];
+                
+                document.getElementById('heading').innerHTML = "<a class='link black-80' href='http://www.jamesdekorne.com/GBCh/hex" + hexR[0] + ".htm'><span class='br-pill bg-dark-red white ph2 f6 pb1 mr2 serif'>" + hexR[0] + "</span>" + hexR[2] + " " + hexR[3] + "</a>";
+                
+                if (hexR !== hexM) {
+                    document.getElementById('heading2').innerHTML = "<a class='link black-80' href='http://www.jamesdekorne.com/GBCh/hex" + hexM[0] + ".htm'><span class='br-pill bg-dark-red white ph2 f6 pb1 mr2 serif'>" + hexM[0] + "</span>" + hexM[2] + " " + hexM[3] + "</a>";
+                    stringresult += ":" + moving.toString() + "=>" + hexM[0];
+                }
+                
+                document.getElementById('result').innerHTML = stringresult;
+                document.getElementById('title').innerHTML = stringresult;
+            }
+
+            function Trigram(trigram) {
+                for (i = 0; i < 8; i++) {
+                    if (bagua[i].lines.toString() === trigram.toString()) {
+                        return bagua[i];
+                    }
+                }
+            }
+            function Hexagram(lower, upper) {
+                for (i = 0; i < hexagrams.length; i++) {
+                    if (hexagrams[i][4] === upper.title && hexagrams[i][5] === lower.title)
+                        return hexagrams[i];
+                }
+            }
+
+
+            /**
+             * Randomize array element order in-place.
+             * Using Durstenfeld shuffle algorithm.
+             * 
+             * @param {type} array
+             * @returns {undefined}
+             */
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    let j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+        </script>
+    </body>
+</html>
